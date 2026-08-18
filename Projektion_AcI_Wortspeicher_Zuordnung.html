@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wortspeicher für unser Theater – Zuordnung</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #fdfbf5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-start;
+    padding: 1.6vh 2vw; user-select: none; overflow: hidden;
+  }
+  .kicker {
+    font-family: Arial, sans-serif;
+    font-size: 1.7vh; letter-spacing: .15em; text-transform: uppercase;
+    color: #8a7a55; margin-bottom: .5vh;
+  }
+  h1 {
+    font-size: 3vh; color: #333; font-weight: normal;
+    font-family: Arial, sans-serif; text-align: center; margin-bottom: 1.6vh;
+  }
+  h1 .zaehler { color: #b9b09a; font-size: 2.2vh; }
+
+  /* ---------- Liste ---------- */
+  .listen { display: flex; gap: 2.4vw; width: 96vw; align-items: flex-start; }
+  .spalte { flex: 1; display: flex; flex-direction: column; gap: .5vh; }
+  .gtitel {
+    font-family: Arial, sans-serif; font-size: 1.7vh; text-transform: uppercase;
+    letter-spacing: .09em; margin: .6vh 0 .1vh .4vw;
+  }
+  .g-verb   .gtitel, .zeile.g-verb   .la { color: #2e7d32; }
+  .g-figur  .gtitel, .zeile.g-figur  .la { color: #c0392b; }
+  .g-aktion .gtitel, .zeile.g-aktion .la { color: #2a6fb8; }
+
+  .zeile { display: flex; align-items: stretch; gap: .8vw; }
+  .la {
+    font-style: italic; font-weight: bold; font-size: 2.7vh;
+    padding: .5vh 1.2vh; border-radius: .8vh; width: 13vw; flex: none; text-align: right;
+    display: flex; align-items: center; justify-content: flex-end;
+  }
+  .zeile.g-verb   .la { background: #dff2df; }
+  .zeile.g-figur  .la { background: #fde0e0; }
+  .zeile.g-aktion .la { background: #ddeafa; }
+
+  .slot {
+    flex: 1; border-radius: .8vh; padding: .5vh 1.2vh;
+    font-family: Arial, sans-serif; font-size: 2.2vh; color: #4a4536;
+    display: flex; align-items: center; min-height: 4.4vh;
+    border: .3vh dashed #ded5b8; background: #fffdf7; cursor: pointer;
+    transition: background .15s;
+  }
+  .slot:hover { background: #f7f2e3; }
+  .slot.gefuellt { border-style: solid; border-color: #cfc5a5; background: #fff; cursor: default; }
+  .slot.gefuellt::before { content: "✓"; color: #2e7d32; margin-right: .8vh; font-weight: bold; }
+  .slot.wrong { animation: shake .38s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-1.2vh); }
+    45% { transform: translateX(1.2vh); }
+    70% { transform: translateX(-.6vh); }
+  }
+
+  /* ---------- Pool ---------- */
+  .poolbox {
+    width: 96vw; margin-top: 1.4vh; padding: 1vh 1.4vw .4vh;
+    border-top: .3vh solid #e3dcc6;
+  }
+  .pool { display: flex; gap: .6vw; flex-wrap: wrap; justify-content: center; }
+  .chip {
+    font-family: Arial, sans-serif; font-size: 2.1vh;
+    padding: .7vh 1.3vh; border-radius: .9vh; cursor: pointer;
+    background: #f3efe2; color: #4a4536; border: .3vh solid transparent;
+    transition: transform .12s;
+  }
+  .chip:hover { background: #ece5d0; }
+  .chip.sel { border-color: #6b5d3f; transform: scale(1.07); box-shadow: 0 .4vh 1.2vh rgba(0,0,0,.14); }
+  .pool:empty::after {
+    content: "Alle Wörter zugeordnet – das ist unser Wortspeicher.";
+    font-family: Arial, sans-serif; font-size: 2.1vh; color: #a99a70; font-style: italic;
+  }
+
+  /* ---------- Fuß ---------- */
+  .warnung {
+    font-family: Arial, sans-serif; font-size: 2vh; color: #8a4b2a;
+    background: #fbeee2; border: .3vh solid #d9b48f; border-radius: 1vh;
+    padding: .8vh 2vw; margin-top: 1.2vh; text-align: center;
+  }
+  .warnung b { color: #b3491f; }
+  .hilfe {
+    font-family: Arial, sans-serif; font-size: 2.1vh; color: #333;
+    background: #fff; border: .3vh solid #8a7a55; border-radius: 1vh;
+    padding: .8vh 2vw; margin-top: .9vh; text-align: center; display: none;
+  }
+  body.mit-hilfe .hilfe { display: block; }
+  .hilfe b { color: #c0392b; }
+
+  .controls {
+    display: flex; gap: 1vw; align-items: center; justify-content: center;
+    font-family: Arial, sans-serif; margin-top: 1.2vh;
+  }
+  button {
+    font-family: Arial, sans-serif; font-size: 1.9vh;
+    padding: .8vh 1.6vh; border-radius: 1vh; border: .28vh solid #8a7a55;
+    background: #fff; color: #6b5d3f; cursor: pointer;
+  }
+  button:hover { background: #f4efe2; }
+  button.on { background: #6b5d3f; color: #fff; }
+</style>
+</head>
+<body>
+  <div class="kicker">Lektion 8 · Wortspeicher für unser Theater</div>
+  <h1>Was heißt das? <span class="zaehler" id="zaehler"></span></h1>
+
+  <div class="listen">
+    <div class="spalte" id="sp1"></div>
+    <div class="spalte" id="sp2"></div>
+  </div>
+
+  <div class="poolbox"><div class="pool" id="pool"></div></div>
+
+  <div class="warnung">
+    So stehen die Wörter im Wörterbuch. Im Satz musst du sie <b>verändern</b> – das ist gleich eure Aufgabe!
+  </div>
+  <div class="hilfe">
+    Akkusativ Singular: magist<b>er</b> → magistr<b>um</b> &nbsp;·&nbsp; lepuscul<b>us</b> → lepuscul<b>um</b>
+    &nbsp;·&nbsp; elephant<b>us</b> → elephant<b>um</b> &nbsp;·&nbsp; imperāt<b>or</b> → imperāt<b>ōrem</b>
+  </div>
+
+  <div class="controls">
+    <button id="loesung">Lösung zeigen</button>
+    <button id="reset">Zurücksetzen</button>
+    <button id="toggleHilfe">Endungen einblenden</button>
+  </div>
+
+<script>
+const GRUPPEN = [
+  { titel: "Womit fängt der Satz an? – Kopfverben", cls: "g-verb", spalte: 1, paare: [
+      ["vidēre",       "sehen"],
+      ["audīre",       "hören"],
+      ["putāre",       "glauben, meinen"],
+      ["animadvertere","bemerken"]
+  ]},
+  { titel: "Wer tritt auf?", cls: "g-figur", spalte: 1, paare: [
+      ["magister",   "der Lehrer"],
+      ["imperātor",  "der Kaiser"],
+      ["lepusculus", "das Häschen"],
+      ["elephantus", "der Elefant"]
+  ]},
+  { titel: "Was tun sie?", cls: "g-aktion", spalte: 2, paare: [
+      ["intrāre",   "betreten, eintreten"],
+      ["currere",   "laufen"],
+      ["surgere",   "aufstehen, sich erheben"],
+      ["cōnsīdere", "sich hinsetzen"],
+      ["fugere",    "fliehen, entkommen"],
+      ["tacēre",    "schweigen"],
+      ["clāmāre",   "rufen"],
+      ["cantāre",   "singen"],
+      ["rīdēre",    "lachen"],
+      ["alere",     "nähren, ernähren"],
+      ["dare",      "geben"],
+      ["incitāre",  "antreiben, anfeuern"]
+  ]}
+];
+
+/* flache Paarliste mit Index */
+const PAARE = [];
+GRUPPEN.forEach(g => g.paare.forEach(p => PAARE.push({ la: p[0], de: p[1], cls: g.cls })));
+
+const gefuellt = PAARE.map(() => false);
+let selChip = null;
+
+/* Pool-Reihenfolge einmalig mischen */
+const poolReihe = PAARE.map((_, i) => i);
+for (let i = poolReihe.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [poolReihe[i], poolReihe[j]] = [poolReihe[j], poolReihe[i]];
+}
+
+const elPool = document.getElementById('pool');
+const elZ = document.getElementById('zaehler');
+
+function baueListen() {
+  document.getElementById('sp1').innerHTML = '';
+  document.getElementById('sp2').innerHTML = '';
+  let k = 0;
+  GRUPPEN.forEach(g => {
+    const ziel = document.getElementById('sp' + g.spalte);
+    const t = document.createElement('div');
+    t.className = 'gtitel ' + g.cls;
+    t.textContent = g.titel;
+    ziel.appendChild(t);
+    g.paare.forEach(() => {
+      const idx = k++;
+      const z = document.createElement('div');
+      z.className = 'zeile ' + PAARE[idx].cls;
+      const la = document.createElement('div');
+      la.className = 'la'; la.textContent = PAARE[idx].la;
+      const sl = document.createElement('div');
+      sl.className = 'slot'; sl.dataset.idx = idx;
+      sl.addEventListener('click', () => versuche(idx, sl));
+      z.appendChild(la); z.appendChild(sl);
+      ziel.appendChild(z);
+    });
+  });
+}
+
+function versuche(idx, sl) {
+  if (gefuellt[idx] || selChip === null) return;
+  if (selChip === idx) { gefuellt[idx] = true; selChip = null; render(); }
+  else { sl.classList.add('wrong'); setTimeout(() => sl.classList.remove('wrong'), 400); }
+}
+
+function render() {
+  document.querySelectorAll('.slot').forEach(sl => {
+    const i = +sl.dataset.idx;
+    sl.textContent = gefuellt[i] ? PAARE[i].de : '';
+    sl.classList.toggle('gefuellt', gefuellt[i]);
+  });
+  elPool.innerHTML = '';
+  poolReihe.forEach(i => {
+    if (gefuellt[i]) return;
+    const c = document.createElement('div');
+    c.className = 'chip' + (selChip === i ? ' sel' : '');
+    c.textContent = PAARE[i].de;
+    c.addEventListener('click', () => { selChip = (selChip === i ? null : i); render(); });
+    elPool.appendChild(c);
+  });
+  elZ.textContent = '(' + gefuellt.filter(Boolean).length + ' / ' + PAARE.length + ')';
+}
+
+document.getElementById('loesung').addEventListener('click', () => {
+  for (let i = 0; i < gefuellt.length; i++) gefuellt[i] = true;
+  selChip = null; render();
+});
+document.getElementById('reset').addEventListener('click', () => {
+  for (let i = 0; i < gefuellt.length; i++) gefuellt[i] = false;
+  selChip = null; render();
+});
+document.getElementById('toggleHilfe').addEventListener('click', e => {
+  document.body.classList.toggle('mit-hilfe');
+  e.currentTarget.classList.toggle('on');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { selChip = null; render(); }
+});
+
+baueListen();
+render();
+</script>
+</body>
+</html>

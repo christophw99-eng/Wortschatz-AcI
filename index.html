@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>AcI – Was siehst du? Was hörst du? (Satzbaukasten)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #fdfbf5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2vh 2vw 1vh;
+    user-select: none;
+    overflow: hidden;
+  }
+  .kicker {
+    font-family: Arial, sans-serif;
+    font-size: 1.9vh; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #8a7a55; margin-bottom: .8vh;
+  }
+  h1 { font-size: 2.8vh; color: #333; margin-bottom: 1.6vh; font-weight: normal; font-family: Arial, sans-serif; text-align: center; }
+
+  /* ---------- Bühne ---------- */
+  .stage {
+    width: 96vw; background: #fff; border: .35vh solid #e3dcc6; border-radius: 1.4vh;
+    padding: 1.6vh 2vw; margin-bottom: 1.6vh; text-align: center;
+    box-shadow: 0 .4vh 1.2vh rgba(0,0,0,.05);
+  }
+  .vorfuehrung {
+    font-family: Arial, sans-serif; font-size: 2.4vh; color: #a99a70;
+    letter-spacing: .04em; min-height: 3.2vh; margin-bottom: .6vh;
+    visibility: hidden;
+  }
+  .vorfuehrung.show { visibility: visible; }
+  .vorfuehrung b { color: #8a7a55; font-weight: bold; }
+
+  .sentence {
+    font-size: 6.4vh; font-style: italic; color: #222;
+    line-height: 1.35; min-height: 8.6vh;
+    display: flex; align-items: center; justify-content: center; gap: 1.2vw; flex-wrap: wrap;
+  }
+  .slot {
+    border-radius: .9vh; padding: .2vh 1.4vh;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .slot.empty {
+    font-style: normal; font-family: Arial, sans-serif; font-size: 2.2vh;
+    color: #cdc4a8; border: .35vh dashed #ded5b8; min-width: 14vh; min-height: 6vh;
+  }
+  .slot.filled.akk  { background: #fde0e0; box-shadow: 0 0 0 .4vh #c0392b inset; color: #c0392b; }
+  .slot.filled.inf  { background: #ddeafa; box-shadow: 0 0 0 .4vh #2a6fb8 inset; color: #2a6fb8; }
+  .slot.filled.verb { background: #dff2df; box-shadow: 0 0 0 .4vh #2e7d32 inset; color: #2e7d32; }
+  .slot.filled.obj  { background: #f2ecd9; box-shadow: 0 0 0 .4vh #a99a70 inset; color: #8a7a55; }
+  .slot.filled { cursor: pointer; }
+  .punkt { font-size: 6.4vh; color: #222; }
+
+  .translation {
+    font-family: Arial, sans-serif; font-size: 3vh; color: #333;
+    background: #fbf8ee; border: .35vh solid #8a7a55; border-radius: 1.2vh;
+    padding: 1vh 2vw; margin-top: 1.2vh; display: inline-block;
+    visibility: hidden;
+  }
+  .translation.show { visibility: visible; }
+
+  /* ---------- Wortspeicher ---------- */
+  .speicher { width: 96vw; display: flex; flex-direction: column; gap: .9vh; }
+  .row { display: flex; align-items: flex-start; gap: 1vw; }
+  .rowlabel {
+    font-family: Arial, sans-serif; font-size: 1.75vh; text-transform: uppercase;
+    letter-spacing: .08em; padding-top: .9vh; width: 15vh; flex: none; text-align: right;
+  }
+  .rowlabel.akk  { color: #c0392b; }
+  .rowlabel.inf  { color: #2a6fb8; }
+  .rowlabel.verb { color: #2e7d32; }
+  .rowlabel.obj  { color: #8a7a55; }
+  .chips { display: flex; gap: .7vw; flex-wrap: wrap; flex: 1; }
+  .chip {
+    font-family: Arial, sans-serif; font-size: 2.1vh; font-weight: bold;
+    padding: .7vh 1.3vh; border-radius: .9vh; cursor: pointer;
+    border: .3vh solid transparent; transition: transform .12s, border-color .12s;
+    position: relative; line-height: 1.15; text-align: center;
+  }
+  .chip small {
+    display: block; font-weight: normal; font-size: 1.6vh; opacity: .8; font-style: italic;
+    height: 0; overflow: hidden; transition: height .15s; line-height: 1.5;
+  }
+  body.shownom .chip small { height: 2.4vh; }
+  .chip.akk  { background: #fde0e0; color: #c0392b; }
+  .chip.inf  { background: #ddeafa; color: #2a6fb8; }
+  .chip.verb { background: #dff2df; color: #2e7d32; }
+  .chip.obj  { background: #f2ecd9; color: #8a7a55; }
+  .chip.active { transform: scale(1.07); }
+  .chip.active.akk  { border-color: #c0392b; }
+  .chip.active.inf  { border-color: #2a6fb8; }
+  .chip.active.verb { border-color: #2e7d32; }
+  .chip.active.obj  { border-color: #8a7a55; }
+  .chip .badge {
+    position: absolute; top: -.9vh; right: -.9vh;
+    background: #8a7a55; color: #fff; font-size: 1.2vh; font-weight: bold;
+    border-radius: 1vh; padding: .1vh .6vh; letter-spacing: .03em;
+  }
+  .chip.needsobj::after {
+    content: "+"; position: absolute; bottom: -.2vh; right: .45vh;
+    font-size: 1.5vh; opacity: .55;
+  }
+
+  /* ---------- Steuerung ---------- */
+  .controls {
+    display: flex; gap: .8vw; align-items: center; flex-wrap: wrap; justify-content: center;
+    font-family: Arial, sans-serif; margin-top: 1.4vh;
+  }
+  button {
+    font-family: Arial, sans-serif; font-size: 2vh;
+    padding: .9vh 1.6vh; border-radius: 1vh; border: .28vh solid #8a7a55;
+    background: #fff; color: #6b5d3f; cursor: pointer;
+  }
+  button:hover { background: #f4efe2; }
+  button.on { background: #6b5d3f; color: #fff; }
+  .hintline {
+    font-family: Arial, sans-serif; font-size: 1.55vh; color: #b9b09a;
+    margin-top: .9vh; text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="kicker">Lektion 8 · Accusativus cum Infinitivo</div>
+  <h1>Quid vidēs? Quid audīs? – Baut den Satz!</h1>
+
+  <div class="stage">
+    <div class="vorfuehrung" id="vorfuehrung"></div>
+    <div class="sentence" id="sentence"></div>
+    <div style="text-align:center"><div class="translation" id="translation"></div></div>
+  </div>
+
+  <div class="speicher">
+    <div class="row">
+      <div class="rowlabel verb">Kopfverb</div>
+      <div class="chips" id="row-verb"></div>
+    </div>
+    <div class="row">
+      <div class="rowlabel akk">Subjekts&shy;akkusativ</div>
+      <div class="chips" id="row-akk"></div>
+    </div>
+    <div class="row">
+      <div class="rowlabel inf">Prädikats&shy;infinitiv</div>
+      <div class="chips" id="row-inf"></div>
+    </div>
+    <div class="row">
+      <div class="rowlabel obj">Ergänzung</div>
+      <div class="chips" id="row-obj"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="toggleTrans">Übersetzung <span style="opacity:.5">(U)</span></button>
+    <button id="toggleNom">Nominativ zeigen <span style="opacity:.5">(N)</span></button>
+    <button id="toggleOrder">Kopfverb: vorn <span style="opacity:.5">(W)</span></button>
+    <button id="reset">Zurücksetzen <span style="opacity:.5">(Esc)</span></button>
+  </div>
+
+  <div class="hintline">Chip anklicken = einsetzen · gefülltes Feld anklicken = wieder leeren · Verben mit „+“ brauchen eine Ergänzung</div>
+
+<script>
+/* ---------------- Wortmaterial (nur Wortschatz L. 1–7) ---------------- */
+const KOPF = [
+  { lat: "videō",        de: "Ich sehe, dass" },
+  { lat: "audiō",        de: "Ich höre, dass" },
+  { lat: "vidēmus",      de: "Wir sehen, dass" },
+  { lat: "audīmus",      de: "Wir hören, dass" },
+  { lat: "putō",         de: "Ich glaube, dass",   badge: "L.8" },
+  { lat: "animadvertō",  de: "Ich bemerke, dass",  badge: "L.8" },
+  { lat: "gaudeō",       de: "Ich freue mich, dass" }
+];
+
+const FIGUR = [
+  { lat: "magistrum",   nom: "magister",    de: "der Lehrer" },
+  { lat: "imperātōrem", nom: "imperātor",   de: "der Kaiser" },
+  { lat: "lepusculum",  nom: "lepusculus",  de: "das Häschen" },
+  { lat: "elephantum",  nom: "elephantus",  de: "der Elefant", badge: "?" }
+];
+
+/* de = 3. Sg. Präsens für den dass-Satz; lat3 = Form für die Vorführung */
+const AKTION = [
+  { lat: "intrāre",    lat3: "intrat",    de: "hereinkommt" },
+  { lat: "venīre",     lat3: "venit",     de: "kommt" },
+  { lat: "currere",    lat3: "currit",    de: "läuft" },
+  { lat: "properāre",  lat3: "properat",  de: "eilt" },
+  { lat: "fugere",     lat3: "fugit",     de: "flieht" },
+  { lat: "sedēre",     lat3: "sedet",     de: "sitzt" },
+  { lat: "surgere",    lat3: "surgit",    de: "aufsteht" },
+  { lat: "obdormīre",  lat3: "obdormit",  de: "einschläft" },
+  { lat: "rīdēre",     lat3: "rīdet",     de: "lacht" },
+  { lat: "clāmāre",    lat3: "clāmat",    de: "schreit" },
+  { lat: "cantāre",    lat3: "cantat",    de: "singt" },
+  { lat: "tacēre",     lat3: "tacet",     de: "schweigt" },
+  { lat: "labōrāre",   lat3: "labōrat",   de: "arbeitet" },
+  { lat: "lūdere",     lat3: "lūdit",     de: "spielt" },
+  { lat: "cōgitāre",   lat3: "cōgitat",   de: "nachdenkt" },
+  { lat: "gaudēre",    lat3: "gaudet",    de: "sich freut" },
+  { lat: "errāre",     lat3: "errat",     de: "umherirrt" },
+  { lat: "alere",      lat3: "alit",      de: "füttert",   obj: true },
+  { lat: "capere",     lat3: "capit",     de: "fängt",     obj: true },
+  { lat: "dare",       lat3: "dat",       de: "gibt",      obj: true },
+  { lat: "portāre",    lat3: "portat",    de: "trägt",     obj: true },
+  { lat: "pūnīre",     lat3: "pūnit",     de: "bestraft",  obj: true },
+  { lat: "vocāre",     lat3: "vocat",     de: "ruft",      obj: true },
+  { lat: "incitāre",   lat3: "incitat",   de: "anfeuert",  obj: true },
+  { lat: "dēpōnere",   lat3: "dēpōnit",   de: "ablegt",    obj: true },
+  { lat: "salūtāre",   lat3: "salūtat",   de: "grüßt",     obj: true }
+];
+
+const OBJEKT = [
+  { lat: "lepusculum",  de: "das Häschen" },
+  { lat: "elephantum",  de: "den Elefanten" },
+  { lat: "magistrum",   de: "den Lehrer" },
+  { lat: "imperātōrem", de: "den Kaiser" },
+  { lat: "sīgnum",      de: "das Zeichen" },
+  { lat: "aquam",       de: "das Wasser" },
+  { lat: "togam",       de: "die Toga" },
+  { lat: "pecūniam",    de: "das Geld" },
+  { lat: "tubam",       de: "die Trompete" }
+];
+
+/* ---------------- Zustand ---------------- */
+const sel = { verb: null, akk: null, inf: null, obj: null };
+let showTrans = false, showNom = false, kopfVorn = true;
+
+/* ---------------- Aufbau der Chips ---------------- */
+function buildRow(id, data, cat) {
+  const box = document.getElementById(id);
+  data.forEach((item, i) => {
+    const c = document.createElement('div');
+    c.className = 'chip ' + cat + (item.obj ? ' needsobj' : '');
+    c.innerHTML = item.lat + (item.nom ? '<small>' + item.nom + '</small>' : '');
+    if (item.badge) {
+      const b = document.createElement('span');
+      b.className = 'badge'; b.textContent = item.badge;
+      c.appendChild(b);
+    }
+    c.addEventListener('click', () => {
+      sel[cat] = (sel[cat] === i) ? null : i;
+      if (cat === 'inf' && sel.inf !== null && !AKTION[sel.inf].obj) sel.obj = null;
+      showTrans = false;
+      render();
+    });
+    box.appendChild(c);
+  });
+}
+buildRow('row-verb', KOPF,   'verb');
+buildRow('row-akk',  FIGUR,  'akk');
+buildRow('row-inf',  AKTION, 'inf');
+buildRow('row-obj',  OBJEKT, 'obj');
+
+/* ---------------- Rendern ---------------- */
+const elSent = document.getElementById('sentence');
+const elVor  = document.getElementById('vorfuehrung');
+const elTrans= document.getElementById('translation');
+
+function slot(text, cat, placeholder) {
+  const d = document.createElement('div');
+  if (text) {
+    d.className = 'slot filled ' + cat;
+    d.textContent = text;
+    d.addEventListener('click', () => { sel[cat] = null; showTrans = false; render(); });
+  } else {
+    d.className = 'slot empty';
+    d.textContent = placeholder;
+  }
+  return d;
+}
+
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function render() {
+  document.body.classList.toggle('shownom', showNom);
+
+  const kv = sel.verb !== null ? KOPF[sel.verb]   : null;
+  const fg = sel.akk  !== null ? FIGUR[sel.akk]   : null;
+  const ak = sel.inf  !== null ? AKTION[sel.inf]  : null;
+  const ob = sel.obj  !== null ? OBJEKT[sel.obj]  : null;
+
+  /* Satzleiste */
+  elSent.innerHTML = '';
+  const parts = [];
+  const sKopf = () => slot(kv ? kv.lat : '', 'verb', 'Kopfverb');
+  const sAkk  = () => slot(fg ? fg.lat : '', 'akk',  'wen?');
+  const sObj  = () => (ak && ak.obj) || ob ? slot(ob ? ob.lat : '', 'obj', 'Ergänzung') : null;
+  const sInf  = () => slot(ak ? ak.lat : '', 'inf',  'Infinitiv');
+
+  if (kopfVorn) { parts.push(sKopf(), sAkk(), sObj(), sInf()); }
+  else          { parts.push(sAkk(), sObj(), sInf(), sKopf()); }
+
+  parts.filter(Boolean).forEach(p => elSent.appendChild(p));
+  const punkt = document.createElement('span');
+  punkt.className = 'punkt'; punkt.textContent = '.';
+  elSent.appendChild(punkt);
+
+  /* Vorführungszeile (Ausgangssatz im Nominativ) */
+  if (showNom && fg && ak) {
+    elVor.innerHTML = 'Vorführung: <b>' + cap(fg.nom) + (ob ? ' ' + ob.lat : '') + ' ' + ak.lat3 + '.</b>';
+    elVor.classList.add('show');
+  } else {
+    elVor.classList.remove('show');
+  }
+
+  /* Übersetzung */
+  if (kv && fg && ak) {
+    let t = kv.de + ' ' + fg.de + (ob ? ' ' + ob.de : '') + ' ' + ak.de + '.';
+    elTrans.textContent = t;
+  } else {
+    elTrans.textContent = '…';
+  }
+  elTrans.classList.toggle('show', showTrans && kv && fg && ak);
+
+  /* Chip-Zustände */
+  ['verb','akk','inf','obj'].forEach(cat => {
+    const rows = { verb:'row-verb', akk:'row-akk', inf:'row-inf', obj:'row-obj' };
+    [...document.getElementById(rows[cat]).children].forEach((ch, i) =>
+      ch.classList.toggle('active', sel[cat] === i));
+  });
+
+  document.getElementById('toggleTrans').classList.toggle('on', showTrans);
+  document.getElementById('toggleNom').classList.toggle('on', showNom);
+  document.getElementById('toggleOrder').innerHTML =
+    'Kopfverb: ' + (kopfVorn ? 'vorn' : 'hinten') + ' <span style="opacity:.5">(W)</span>';
+}
+
+/* ---------------- Steuerung ---------------- */
+document.getElementById('toggleTrans').addEventListener('click', () => { showTrans = !showTrans; render(); });
+document.getElementById('toggleNom').addEventListener('click',   () => { showNom   = !showNom;   render(); });
+document.getElementById('toggleOrder').addEventListener('click', () => { kopfVorn  = !kopfVorn;  render(); });
+document.getElementById('reset').addEventListener('click', () => {
+  sel.verb = sel.akk = sel.inf = sel.obj = null; showTrans = false; render();
+});
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (k === 'u') { showTrans = !showTrans; render(); }
+  if (k === 'n') { showNom   = !showNom;   render(); }
+  if (k === 'w') { kopfVorn  = !kopfVorn;  render(); }
+  if (e.key === 'Escape') { sel.verb = sel.akk = sel.inf = sel.obj = null; showTrans = false; render(); }
+});
+
+render();
+</script>
+</body>
+</html>

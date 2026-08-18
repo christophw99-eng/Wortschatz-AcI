@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>AcI-Wiederholung – Feriensätze (Zuordnung)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #fdfbf5;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 3vh 4vw;
+    user-select: none;
+  }
+  .kicker {
+    font-family: Arial, sans-serif;
+    font-size: 2.2vh; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #8a7a55; margin-bottom: 1.5vh;
+  }
+  h1 { font-size: 4vh; color: #333; margin-bottom: 5vh; font-weight: normal; font-family: Arial, sans-serif; }
+
+  .sentence {
+    font-size: 7vh; font-style: italic; color: #222;
+    text-align: center; line-height: 1.6; margin-bottom: 5vh;
+  }
+  .word {
+    cursor: pointer; border-radius: .8vh; padding: 0 .6vh;
+    transition: background .2s, box-shadow .2s, color .2s;
+  }
+  .word:hover { background: #f0ead8; }
+  .word.m-akk  { background: #fde0e0; box-shadow: 0 0 0 .4vh #c0392b inset; color: #c0392b; }
+  .word.m-inf  { background: #ddeafa; box-shadow: 0 0 0 .4vh #2a6fb8 inset; color: #2a6fb8; }
+  .word.m-verb { background: #dff2df; box-shadow: 0 0 0 .4vh #2e7d32 inset; color: #2e7d32; }
+
+  .chips { display: flex; gap: 2vw; margin-bottom: 4vh; flex-wrap: wrap; justify-content: center; }
+  .chip {
+    font-family: Arial, sans-serif; font-size: 3vh; font-weight: bold;
+    padding: 1.6vh 2.6vh; border-radius: 1.4vh; cursor: pointer;
+    border: .5vh solid transparent; transition: all .2s; opacity: .92;
+  }
+  .chip.akk  { background: #fde0e0; color: #c0392b; }
+  .chip.inf  { background: #ddeafa; color: #2a6fb8; }
+  .chip.verb { background: #dff2df; color: #2e7d32; }
+  .chip.active.akk  { border-color: #c0392b; transform: scale(1.08); box-shadow: 0 .5vh 1.5vh rgba(0,0,0,.15); }
+  .chip.active.inf  { border-color: #2a6fb8; transform: scale(1.08); box-shadow: 0 .5vh 1.5vh rgba(0,0,0,.15); }
+  .chip.active.verb { border-color: #2e7d32; transform: scale(1.08); box-shadow: 0 .5vh 1.5vh rgba(0,0,0,.15); }
+
+  .translation {
+    font-family: Arial, sans-serif; font-size: 3.6vh; color: #333;
+    background: #fff; border: .4vh solid #8a7a55; border-radius: 1.5vh;
+    padding: 1.8vh 3vw; text-align: center;
+    visibility: hidden; margin-bottom: 4vh; max-width: 90vw;
+  }
+  .translation.show { visibility: visible; }
+
+  .controls {
+    display: flex; gap: 1.5vw; align-items: center; flex-wrap: wrap; justify-content: center;
+    font-family: Arial, sans-serif;
+  }
+  button {
+    font-family: Arial, sans-serif; font-size: 2.4vh;
+    padding: 1.2vh 2.2vh; border-radius: 1.2vh; border: .3vh solid #8a7a55;
+    background: #fff; color: #6b5d3f; cursor: pointer;
+  }
+  button:hover { background: #f4efe2; }
+  .counter { font-size: 2.4vh; color: #8a7a55; min-width: 9vh; text-align: center; }
+  .hintline {
+    position: fixed; bottom: 1.5vh; right: 2vw;
+    font-family: Arial, sans-serif; font-size: 1.8vh; color: #bbb;
+  }
+</style>
+</head>
+<body>
+  <div class="kicker">Wiederholung · Accusativus cum Infinitivo</div>
+  <h1>Welcher Bestandteil ist das? – Erst unten wählen, dann das Wort anklicken!</h1>
+
+  <div class="sentence" id="sentence"></div>
+
+  <div class="chips">
+    <div class="chip akk"  data-cat="m-akk">Subjektsakkusativ</div>
+    <div class="chip inf"  data-cat="m-inf">Prädikatsinfinitiv</div>
+    <div class="chip verb" data-cat="m-verb">Kopfverb</div>
+  </div>
+
+  <div class="translation" id="translation"></div>
+
+  <div class="controls">
+    <button id="prev">◀ Satz</button>
+    <div class="counter" id="counter"></div>
+    <button id="next">Satz ▶</button>
+    <button id="toggleTrans">Übersetzung</button>
+    <button id="reset">Zurücksetzen</button>
+  </div>
+
+  <div class="hintline">Bestandteil anklicken → Wort anklicken · nochmal aufs Wort = löschen · Pfeiltasten = Satzwechsel</div>
+
+<script>
+  const sentences = [
+    { words: ["Magister", "audit", "Marcum", "pila", "ludere."],
+      trans: "Der Lehrer hört, dass Markus (mit dem) Ball spielt." },
+    { words: ["Magister", "videt", "Iuliam", "in", "aqua", "ludere."],
+      trans: "Der Lehrer sieht, dass Julia im Wasser spielt." },
+    { words: ["Magister", "putat", "Luciam", "lepusculos", "alere."],
+      trans: "Der Lehrer glaubt, dass Lucia Häschen füttert." },
+    { words: ["Discipuli", "audiunt", "magistrum", "in", "mari", "esse."],
+      trans: "Die Schüler hören, dass der Lehrer im Meer ist." },
+  ];
+  const CATS = ["m-akk", "m-inf", "m-verb"];
+  let idx = 0;
+  let activeCat = null;
+  // marks[i] = array of category (or null) per word
+  const marks = sentences.map(s => s.words.map(() => null));
+  const shown = sentences.map(() => false);
+
+  const elS = document.getElementById('sentence');
+  const elT = document.getElementById('translation');
+  const elC = document.getElementById('counter');
+
+  function render() {
+    const s = sentences[idx];
+    elS.innerHTML = '';
+    s.words.forEach((w, i) => {
+      const span = document.createElement('span');
+      span.className = 'word' + (marks[idx][i] ? ' ' + marks[idx][i] : '');
+      span.textContent = w;
+      span.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (marks[idx][i]) { marks[idx][i] = null; }          // click again = clear
+        else if (activeCat) { marks[idx][i] = activeCat; }     // assign selected category
+        render();
+      });
+      elS.appendChild(span);
+      if (i < s.words.length - 1) elS.appendChild(document.createTextNode(' '));
+    });
+    elT.textContent = s.trans;
+    elT.classList.toggle('show', shown[idx]);
+    elC.textContent = (idx + 1) + ' / ' + sentences.length;
+    document.querySelectorAll('.chip').forEach(ch =>
+      ch.classList.toggle('active', ch.dataset.cat === activeCat));
+  }
+
+  document.querySelectorAll('.chip').forEach(ch => {
+    ch.addEventListener('click', () => {
+      activeCat = (activeCat === ch.dataset.cat) ? null : ch.dataset.cat;
+      render();
+    });
+  });
+  document.getElementById('prev').addEventListener('click', () => { if (idx > 0) { idx--; render(); } });
+  document.getElementById('next').addEventListener('click', () => { if (idx < sentences.length - 1) { idx++; render(); } });
+  document.getElementById('toggleTrans').addEventListener('click', () => { shown[idx] = !shown[idx]; render(); });
+  document.getElementById('reset').addEventListener('click', () => {
+    marks[idx] = sentences[idx].words.map(() => null);
+    shown[idx] = false; activeCat = null; render();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && idx < sentences.length - 1) { idx++; render(); }
+    if (e.key === 'ArrowLeft' && idx > 0) { idx--; render(); }
+    if (e.key === 'u' || e.key === 'U') { shown[idx] = !shown[idx]; render(); }
+  });
+
+  render();
+</script>
+</body>
+</html>
